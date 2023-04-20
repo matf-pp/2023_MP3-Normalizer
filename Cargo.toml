@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 walkdir = "2"
 system_shutdown = "*"
+id3 = "1.7.0"

@@ -4,7 +4,8 @@ mod normalize;
 use std::env;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use crate::normalize::normalize::normalize;
+use crate::normalize::normalize;
+
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -23,7 +24,7 @@ fn main() {
                     break;
                 } else {
                     let file = v.remove(len - 1);
-                    normalize(file);
+                    let asd = normalize(file);
                 }
             }
         }));

@@ -7,6 +7,7 @@ use system_shutdown::*;
 extern crate walkdir;
 use walkdir::WalkDir;
 
+
 pub(crate) struct Task {
     pub loudness:f32,
     pub files:Vec<String>,
@@ -39,7 +40,6 @@ pub fn finish(&self) {
 }
 
 pub(crate) fn parse_args(args:Vec<String>) -> Task {
-    println!("Usao u parsiranje argumenata");
     let mut loudness:f32 = 89.0;
     let mut files:Vec<String> = Vec::new();
     let mut dest:String = ".".to_string();
@@ -79,7 +79,7 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
                     for file in WalkDir::new(arg).into_iter().filter_map(|file| file.ok()) {
                         if file.metadata().unwrap().is_file() {
                             if let Some(extension) = file.path().extension() {
-                                if extension == "mp3" || extension == "wav" {
+                                if extension == "mp3" {
                                     files.push(file.path().display().to_string());
                                 }
                             }
