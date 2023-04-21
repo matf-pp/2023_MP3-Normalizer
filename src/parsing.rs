@@ -57,6 +57,9 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
         else if arg == "-m" {
             curr = 3
         }
+        else if arg == "-r" {
+            actions |= 1 << 4;
+        }
         else if arg == "-show" {
             actions |= 1;
         }

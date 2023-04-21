@@ -4,12 +4,13 @@ mod normalize;
 use std::env;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use crate::normalize::normalize;
+use crate::normalize::{add_rg_track_tags, remove_rg_tags};
 
 
 fn main() {
     let args: Vec<String> = env::args().collect();
     let task: parsing::Task = parsing::parse_args(args);
+    let norm:bool = (task.actions & 1 << 4) == 0;
 
     let files = Arc::new(Mutex::new(task.files.to_vec()));
     let mut threads = Vec::new();
@@ -24,7 +25,12 @@ fn main() {
                     break;
                 } else {
                     let file = v.remove(len - 1);
-                    let asd = normalize(file);
+                    if norm {
+                        add_rg_track_tags(file);
+                    }
+                    else {
+                        remove_rg_tags(file);
+                    }
                 }
             }
         }));

@@ -1,34 +1,50 @@
 use std::fs::copy;
 
 extern crate id3;
-use id3::{Content, Error, ErrorKind, Frame, frame, Tag, TagLike, Version};
-use id3::frame::{ExtendedText, Unknown};
+use id3::{Error, ErrorKind, Tag, TagLike, Version};
+use id3::frame::{ExtendedText};
 
 
-pub fn normalize(file:String) -> Result<(), Box<dyn std::error::Error>>  {
-    // TODO: calculate replay gain for song
-    let replaygain_track_gain:f32 = -40.00;
-    let replaygain_track_peak:f32 = 1.073917;
+struct RgTrackTags {
+    rg_track_gain:f32,
+    rg_track_peak:f32
+}
 
-    // maybe add album replay_gain
-    // let replaygain_album_gain:f32 = -40.00;
-    // let replaygain_album_peak:f32 = 1.073917;
+struct RgAlbumTags {
+    rg_album_gain:f32,
+    rg_album_peak:f32
+}
 
+pub fn add_rg_track_tags(path:String) {
+    let rg_track_tags = calc_rg_track_tags(&path);
 
-    let mut tag = match Tag::read_from_path(&file) {
-        Ok(tag) => tag,
-        Err(Error{kind: ErrorKind::NoTag, ..}) => Tag::new(),
-        Err(err) => return Err(Box::new(err)),
+    let mut tag = match get_tag_from_path(&path) {
+        Some(tag) => tag,
+        None => return,
     };
 
-    tag.add_frame(frame::ExtendedText{
+    tag.add_frame(ExtendedText{
         description: "REPLAYGAIN_TRACK_GAIN".to_string(),
-        value: replaygain_track_gain.to_string() + " dB",
+        value: rg_track_tags.rg_track_gain.to_string() + " dB",
     });
-    tag.add_frame(frame::ExtendedText{
+    tag.add_frame(ExtendedText{
         description: "REPLAYGAIN_TRACK_PEAK".to_string(),
-        value: replaygain_track_peak.to_string(),
+        value: rg_track_tags.rg_track_peak.to_string(),
     });
+
+    tag.write_to_path(&path, Version::Id3v24).expect("Failed writing tag");
+
+}
+
+fn get_tag_from_path(path:&String) -> Option<Tag> {
+    return match Tag::read_from_path(path) {
+        Ok(tag) => Option::from(tag),
+        Err(Error { kind: ErrorKind::NoTag, .. }) => Option::from(Tag::new()),
+        Err(_err) => None,
+    };
+}
+
+pub fn add_rg_album_tags() {
     // tag.add_frame(frame::ExtendedText{
     //     description: "REPLAYGAIN_ALBUM_GAIN".to_string(),
     //     value: replaygain_album_gain.to_string() + " dB",
@@ -37,8 +53,30 @@ pub fn normalize(file:String) -> Result<(), Box<dyn std::error::Error>>  {
     //     description: "REPLAYGAIN_ALBUM_PEAK".to_string(),
     //     value: replaygain_album_peak.to_string(),
     // });
+}
 
-    tag.write_to_path(&file, Version::Id3v24)?;
 
-    Ok(())
+pub fn remove_rg_tags(path:String) {
+    let mut tag = match get_tag_from_path(&path) {
+        Some(tag) => tag,
+        None => return,
+    };
+
+    tag.remove_extended_text(Some("REPLAYGAIN_TRACK_GAIN"), None);
+    tag.remove_extended_text(Some("REPLAYGAIN_TRACK_PEAK"), None);
+    tag.remove_extended_text(Some("REPLAYGAIN_ALBUM_GAIN"), None);
+    tag.remove_extended_text(Some("REPLAYGAIN_ALBUM_PEAK"), None);
+
+    tag.write_to_path(&path, Version::Id3v24).expect("Failed writing tag");
+}
+
+
+// TODO
+fn calc_rg_track_tags(path: &String) -> RgTrackTags {
+     let rg_tags = RgTrackTags {
+         rg_track_gain: -9.0,
+         rg_track_peak: 1.0
+     };
+
+    return rg_tags;
 }
