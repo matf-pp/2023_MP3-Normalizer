@@ -21,7 +21,7 @@ pub fn finish(&self) {
         if self.actions & 1 == 1 {
             println!("Opening");
             Command::new("open")
-                .arg(&self.dest) // <- Specify the directory you'd like to open.
+                .arg(&self.dest)
                 .spawn()
                 .unwrap();
         }
@@ -48,56 +48,40 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
 
     let mut curr:i32 = 0;
     for arg in args {
-        if arg == "-i" {
-            curr = 1;
-        }
-        else if arg == "-o" {
-            curr = 2;
-        }
-        else if arg == "-nt" {
-            curr = 3
-        }
-        else if arg == "-r" {
-            actions |= 1 << 4;
-        }
-        else if arg == "-a" {
-            actions |= 1 << 5;
-        }
-        else if arg == "-show" {
-            actions |= 1;
-        }
-        else if arg == "-sd"  {
-            actions |= 1 << 1;
-        }
-        else if arg == "-hi"  {
-            actions |= 1 << 2;
-        }
-        else if arg == "-sl"  {
-            actions |= 1 << 3;
-        }
-        else {
-            if curr == 1 {
-                let path = metadata(&arg).unwrap();
-                if path.is_file() {
-                    paths.push(arg);
-                }
-                else {
-                    for path in WalkDir::new(arg).into_iter().filter_map(|path| path.ok()) {
-                        if path.metadata().unwrap().is_file() {
-                            if let Some(extension) = path.path().extension() {
-                                if extension == "mp3" {
-                                    paths.push(path.path().display().to_string());
+        let arg1 = arg.as_str();
+        match arg1 {
+            "-i" => curr = 1,
+            "-o" => curr = 2,
+            "-nt" => curr = 3,
+            "-r" => actions |= 1 << 4,
+            "-a" => actions |= 1 << 5,
+            "-show" => actions |= 1,
+            "-sd" => actions |= 1 << 1,
+            "-hi" => actions |= 1 << 2,
+            "-sl" => actions |= 1 << 3,
+            _ => {
+                match curr {
+                    1 => {
+                        let path = metadata(&arg).unwrap();
+                        if path.is_file() {
+                            paths.push(arg);
+                        }
+                        else {
+                            for path in WalkDir::new(arg).into_iter().filter_map(|path| path.ok()) {
+                                if path.metadata().unwrap().is_file() {
+                                    if let Some(extension) = path.path().extension() {
+                                        if extension == "mp3" {
+                                            paths.push(path.path().display().to_string());
+                                        }
+                                    }
                                 }
                             }
                         }
-                    }
+                    },
+                    2 => dest = arg,
+                    3 => num_th = arg.parse::<i32>().unwrap(),
+                    _ => {}
                 }
-            }
-            else if curr == 2 {
-                dest = arg;
-            }
-            else if curr == 3 {
-                num_th = arg.parse::<i32>().unwrap();
             }
         }
     }
