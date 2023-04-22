@@ -1,5 +1,7 @@
 use std::fs::metadata;
 use std::process::Command;
+use std::collections::HashSet;
+use std::fs;
 
 extern crate system_shutdown;
 use system_shutdown::*;
@@ -41,7 +43,7 @@ pub fn finish(&self) {
 
 pub(crate) fn parse_args(args:Vec<String>) -> Task {
     let mut loudness:f32 = 89.0;
-    let mut paths:Vec<String> = Vec::new();
+    let mut paths:HashSet<String> = HashSet::new();
     let mut dest:String = ".".to_string();
     let mut num_th:i32 = 1;
     let mut actions:i32 = 0;
@@ -64,31 +66,41 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
                     1 => {
                         let path = metadata(&arg).unwrap();
                         if path.is_file() {
-                            paths.push(arg);
+                            let path_norm = fs::canonicalize(arg.as_str()).unwrap();
+                            paths.insert(path_norm.to_str().unwrap().to_string());
                         }
                         else {
                             for path in WalkDir::new(arg).into_iter().filter_map(|path| path.ok()) {
                                 if path.metadata().unwrap().is_file() {
                                     if let Some(extension) = path.path().extension() {
                                         if extension == "mp3" {
-                                            paths.push(path.path().display().to_string());
+                                            // paths.push(path.path().display().to_string());
+                                            let path_norm = fs::canonicalize(path.path()).unwrap();
+                                            paths.insert(path_norm.to_str().unwrap().to_string());
                                         }
                                     }
                                 }
                             }
                         }
                     },
-                    2 => dest = arg,
-                    3 => num_th = arg.parse::<i32>().unwrap(),
+                    2 => {
+                        dest = arg;
+                        curr = 0;
+                    },
+                    3 => {
+                        num_th = arg.parse::<i32>().unwrap();
+                        curr = 0;
+                    },
                     _ => {}
                 }
             }
         }
     }
 
+    let paths_vec = Vec::from_iter(paths);
     let task:Task = Task {
         loudness,
-        paths,
+        paths: paths_vec,
         dest,
         num_th,
         actions

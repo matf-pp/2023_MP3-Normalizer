@@ -1,6 +1,6 @@
-extern crate id3;
-
 use std::collections::HashSet;
+
+extern crate id3;
 use id3::{Error, ErrorKind, Tag, TagLike, Version};
 use id3::frame::{ExtendedText};
 
@@ -39,8 +39,6 @@ pub fn add_rg_album_tags(paths:HashSet<String>) {
     let rg_album_tags = calc_rg_album_tags(&paths);
 
     for path in paths.iter() {
-        let rg_track_tags = calc_rg_track_tags(path);
-
         let mut tag = match get_tag_from_path(&path) {
             Some(tag) => tag,
             None => continue,
@@ -54,18 +52,9 @@ pub fn add_rg_album_tags(paths:HashSet<String>) {
             description: "REPLAYGAIN_ALBUM_PEAK".to_string(),
             value: rg_album_tags.rg_album_peak.to_string(),
         });
-        tag.add_frame(ExtendedText{
-            description: "REPLAYGAIN_TRACK_GAIN".to_string(),
-            value: rg_track_tags.rg_track_gain.to_string() + " dB",
-        });
-        tag.add_frame(ExtendedText{
-            description: "REPLAYGAIN_TRACK_PEAK".to_string(),
-            value: rg_track_tags.rg_track_peak.to_string(),
-        });
 
         tag.write_to_path(&path, Version::Id3v24).expect("Failed writing tag");
     }
-
 }
 
 pub fn remove_rg_tags(path:String) {
@@ -82,19 +71,18 @@ pub fn remove_rg_tags(path:String) {
     tag.write_to_path(&path, Version::Id3v24).expect("Failed writing tag");
 }
 
+pub fn get_album_from_path(path:&String) -> Option<String> {
+    return match Tag::read_from_path(path) {
+        Ok(tag) => tag.album().map(str::to_string),
+        Err(_err) => None
+    };
+}
 
 fn get_tag_from_path(path:&String) -> Option<Tag> {
     return match Tag::read_from_path(path) {
         Ok(tag) => Option::from(tag),
         Err(Error { kind: ErrorKind::NoTag, .. }) => Option::from(Tag::new()),
         Err(_err) => None,
-    };
-}
-
-pub fn get_album_from_path(path:&String) -> Option<String> {
-    return match Tag::read_from_path(path) {
-        Ok(tag) => tag.album().map(str::to_string),
-        Err(_err) => None
     };
 }
 
