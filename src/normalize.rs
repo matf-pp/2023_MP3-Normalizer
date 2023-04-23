@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::path;
 
 extern crate id3;
 use id3::{Error, ErrorKind, Tag, TagLike, Version};
@@ -9,14 +10,16 @@ use itertools::Itertools;
 use rodio::Source;
 
 struct RgTrackTags {
-    rg_track_gain:f32,
+    rg_track_gain:f64,
     rg_track_peak:f32
 }
 
 struct RgAlbumTags {
-    rg_album_gain:f32,
+    rg_album_gain:f64,
     rg_album_peak:f32
 }
+
+const DEFAULT_GAIN: f64 = 83.0;
 
 pub fn add_rg_track_tags(path:String) {
     let rg_track_tags = calc_rg_track_tags(&path);
@@ -91,10 +94,12 @@ fn get_tag_from_path(path:&String) -> Option<Tag> {
 
 // TODO
 fn calc_rg_track_tags(path: &String) -> RgTrackTags {
-     let rg_tags = RgTrackTags {
-         rg_track_gain: -9.0,
-         rg_track_peak: 1.0
-     };
+    let rg_track_gain_desired = calc_replay_gain(&path);
+
+    let rg_tags: RgTrackTags = RgTrackTags {
+        rg_track_gain: DEFAULT_GAIN - rg_track_gain_desired,
+        rg_track_peak: 1.0
+    };
 
     return rg_tags;
 }

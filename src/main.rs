@@ -22,7 +22,6 @@ fn main() {
     let album_rg = (task.actions & 1 << 5) != 0;
     let albums = Arc::new(Mutex::new(HashMap::new()));
 
-
     let new_paths = Arc::new(Mutex::new(Vec::new()));
     if cp {
         let _temp = fs::create_dir(&task.dest);
