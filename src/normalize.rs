@@ -4,6 +4,9 @@ extern crate id3;
 use id3::{Error, ErrorKind, Tag, TagLike, Version};
 use id3::frame::{ExtendedText};
 
+use std::io::BufReader;
+use itertools::Itertools;
+use rodio::Source;
 
 struct RgTrackTags {
     rg_track_gain:f32,
@@ -103,4 +106,56 @@ fn calc_rg_album_tags(paths:&HashSet<String>) -> RgAlbumTags {
     };
 
     return rg_tags;
+}
+
+fn calc_replay_gain(path: &str) -> f64 {
+    let file = std::fs::File::open(path).unwrap();
+    let decoder = rodio::Decoder::new(BufReader::new(file)).unwrap();
+    let sample_rate = decoder.sample_rate();
+    let sample_chunk: u32 = sample_rate / 20;
+    // let total_duration = decoder.total_duration();
+    let channels = decoder.channels();
+    let samples = decoder.into_iter().collect_vec();
+    let samples_per_channel = samples.len() / channels as usize;
+
+    let mut rms_vec = [(); 2].map(|_| Vec::new());
+    for (i, channel) in samples.chunks_exact(samples_per_channel).enumerate()
+    {
+        for (j, sample) in channel.chunks(sample_chunk as usize).enumerate()
+        {
+            // TODO
+            // equal_loudness_filter
+            
+            // Call RMS calculation
+            let rms = calc_rms(sample);
+            rms_vec[i].push(rms);
+
+            // take mean of stereo channels
+            if i == 1 {
+                rms_vec[0][j] += rms_vec[1][j];
+                rms_vec[0][j] /= 2 as f64;
+                
+                // Convert to dB
+                let const_log_factor = 1e-10;
+                rms_vec[0][j] = 20 as f64 * (rms_vec[0][j] + const_log_factor).log10() as f64;
+            }
+        }
+    }
+
+    // Sort vector of floats
+    rms_vec[0].sort_by(|a, b| a.partial_cmp(b).unwrap());
+    let rg_index = ((rms_vec[0].len() as f64) * (0.95 as f64)).round() as usize;
+    let replay_gain = rms_vec[0][rg_index];
+
+    replay_gain
+}
+
+fn calc_rms(sample: &[i16]) -> f64{
+    let mut sqr_sum = 0.0;
+    for sample_val in sample {
+        let val = *sample_val as f64;
+        sqr_sum += val * val;
+    }
+    let rms = (sqr_sum / sample.len() as f64).sqrt();
+    rms
 }

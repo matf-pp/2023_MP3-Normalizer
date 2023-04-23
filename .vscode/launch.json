@@ -1,0 +1,45 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'MP3-Normalizer'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=MP3-Normalizer",
+                    "--package=MP3-Normalizer"
+                ],
+                "filter": {
+                    "name": "MP3-Normalizer",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'MP3-Normalizer'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=MP3-Normalizer",
+                    "--package=MP3-Normalizer"
+                ],
+                "filter": {
+                    "name": "MP3-Normalizer",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
