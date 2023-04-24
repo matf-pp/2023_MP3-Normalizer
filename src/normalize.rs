@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::hash::Hash;
 use std::path;
 
 extern crate id3;
@@ -94,7 +95,8 @@ fn get_tag_from_path(path:&String) -> Option<Tag> {
 
 // TODO
 fn calc_rg_track_tags(path: &String) -> RgTrackTags {
-    let rg_track_gain_desired = calc_replay_gain(&path);
+    let mut paths: HashSet<String> = HashSet::new(); paths.insert(path.to_string());
+    let rg_track_gain_desired = calc_replay_gain(&paths);
 
     let rg_tags: RgTrackTags = RgTrackTags {
         rg_track_gain: DEFAULT_GAIN - rg_track_gain_desired,
@@ -105,52 +107,57 @@ fn calc_rg_track_tags(path: &String) -> RgTrackTags {
 }
 
 fn calc_rg_album_tags(paths:&HashSet<String>) -> RgAlbumTags {
+    let rg_album_gain_desired: f64 = calc_replay_gain(paths);
+
     let rg_tags = RgAlbumTags {
-        rg_album_gain: -19.0,
+        rg_album_gain: rg_album_gain_desired,
         rg_album_peak: 1.0
     };
 
     return rg_tags;
 }
 
-fn calc_replay_gain(path: &str) -> f64 {
-    let file = std::fs::File::open(path).unwrap();
-    let decoder = rodio::Decoder::new(BufReader::new(file)).unwrap();
-    let sample_rate = decoder.sample_rate();
-    let sample_chunk: u32 = sample_rate / 20;
-    // let total_duration = decoder.total_duration();
-    let channels = decoder.channels();
-    let samples = decoder.into_iter().collect_vec();
-    let samples_per_channel = samples.len() / channels as usize;
+fn calc_replay_gain(paths: &HashSet<String>) -> f64 {
+    let mut gain_array: Vec<f64> = Vec::new();
 
-    let mut rms_vec = [(); 2].map(|_| Vec::new());
-    for (i, channel) in samples.chunks_exact(samples_per_channel).enumerate()
-    {
-        for (j, sample) in channel.chunks(sample_chunk as usize).enumerate()
+    for path in paths {
+        let file = std::fs::File::open(path).unwrap();
+        let decoder = rodio::Decoder::new(BufReader::new(file)).unwrap();
+        let sample_rate = decoder.sample_rate();
+        let sample_chunk: u32 = sample_rate / 20;
+        // let total_duration = decoder.total_duration();
+        let channels = decoder.channels();
+        let samples = decoder.into_iter().collect_vec();
+        let samples_per_channel = samples.len() / channels as usize;
+        let mut rms_vec = [(); 2].map(|_| Vec::new());
+
+        for (i, channel) in samples.chunks_exact(samples_per_channel).enumerate()
         {
-            // TODO
-            // equal_loudness_filter
-            
-            // Call RMS calculation
-            let rms = calc_rms(sample);
-            rms_vec[i].push(rms);
-
-            // take mean of stereo channels
-            if i == 1 {
-                rms_vec[0][j] += rms_vec[1][j];
-                rms_vec[0][j] /= 2 as f64;
+            for (j, sample) in channel.chunks(sample_chunk as usize).enumerate()
+            {
+                // TODO
+                // equal_loudness_filter
                 
-                // Convert to dB
-                let const_log_factor = 1e-10;
-                rms_vec[0][j] = 20 as f64 * (rms_vec[0][j] + const_log_factor).log10() as f64;
+                // Call RMS calculation
+                let rms = calc_rms(sample);
+                rms_vec[i].push(rms);
+
+                // take mean of stereo channels
+                if i == 1 {
+                    let mut x = (rms_vec[0][j] + rms_vec[1][j]) / 2.0;
+
+                    // Convert to dB
+                    let const_log_factor = 1e-10;
+                    x = 20.0 * (x + const_log_factor).log10() as f64;
+                    gain_array.push(x);
+                }
             }
         }
     }
-
     // Sort vector of floats
-    rms_vec[0].sort_by(|a, b| a.partial_cmp(b).unwrap());
-    let rg_index = ((rms_vec[0].len() as f64) * (0.95 as f64)).round() as usize;
-    let replay_gain = rms_vec[0][rg_index];
+    gain_array.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    let rg_index = ((gain_array.len() as f64) * 0.95).round() as usize;
+    let replay_gain = gain_array[rg_index];
 
     replay_gain
 }
