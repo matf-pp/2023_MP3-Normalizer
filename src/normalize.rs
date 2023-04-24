@@ -93,7 +93,6 @@ fn get_tag_from_path(path:&String) -> Option<Tag> {
     };
 }
 
-// TODO
 fn calc_rg_track_tags(path: &String) -> RgTrackTags {
     let mut paths: HashSet<String> = HashSet::new(); paths.insert(path.to_string());
     let rg_track_gain_desired = calc_replay_gain(&paths);
@@ -135,7 +134,6 @@ fn calc_replay_gain(paths: &HashSet<String>) -> f64 {
         {
             for (j, sample) in channel.chunks(sample_chunk as usize).enumerate()
             {
-                // TODO
                 // equal_loudness_filter
                 
                 // Call RMS calculation
@@ -143,7 +141,7 @@ fn calc_replay_gain(paths: &HashSet<String>) -> f64 {
                 rms_vec[i].push(rms);
 
                 if channels == 1 {
-                    rms_vec[1].push(rmc);
+                    rms_vec[1].push(rms);
                 }
 
                 // take mean of stereo channels
