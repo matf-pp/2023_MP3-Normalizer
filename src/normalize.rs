@@ -142,8 +142,12 @@ fn calc_replay_gain(paths: &HashSet<String>) -> f64 {
                 let rms = calc_rms(sample);
                 rms_vec[i].push(rms);
 
+                if channels == 1 {
+                    rms_vec[1].push(rmc);
+                }
+
                 // take mean of stereo channels
-                if i == 1 {
+                if i == 1 || channels == 1 {
                     let mut x = (rms_vec[0][j] + rms_vec[1][j]) / 2.0;
 
                     // Convert to dB
