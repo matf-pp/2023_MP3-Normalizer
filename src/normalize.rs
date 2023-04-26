@@ -1,3 +1,5 @@
+mod replay_gain_calc;
+
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::path;
@@ -95,7 +97,7 @@ fn get_tag_from_path(path:&String) -> Option<Tag> {
 
 fn calc_rg_track_tags(path: &String) -> RgTrackTags {
     let mut paths: HashSet<String> = HashSet::new(); paths.insert(path.to_string());
-    let rg_track_gain_desired = calc_replay_gain(&paths);
+    let rg_track_gain_desired = replay_gain_calc::calc_replay_gain(&paths);
 
     let rg_tags: RgTrackTags = RgTrackTags {
         rg_track_gain: DEFAULT_GAIN - rg_track_gain_desired,

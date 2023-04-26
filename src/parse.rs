@@ -42,7 +42,7 @@ pub fn finish(&self) {
 }
 
 pub(crate) fn parse_args(args:Vec<String>) -> Task {
-    let mut loudness:f32 = 89.0;
+    let mut loudness:f32 = 83.0;
     let mut paths:HashSet<String> = HashSet::new();
     let mut dest:String = ".".to_string();
     let mut num_th:i32 = 1;
@@ -55,6 +55,7 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
             "-i" => curr = 1,
             "-o" => curr = 2,
             "-nt" => curr = 3,
+            "-l" => curr = 4,
             "-r" => actions |= 1 << 4,
             "-a" => actions |= 1 << 5,
             "-show" => actions |= 1,
@@ -89,6 +90,10 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
                     },
                     3 => {
                         num_th = arg.parse::<i32>().unwrap();
+                        curr = 0;
+                    },
+                    4 => {
+                        loudness = arg.parse::<f32>().unwrap();
                         curr = 0;
                     },
                     _ => {}

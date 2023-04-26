@@ -41,10 +41,12 @@ fn main() {
                     let len = v.len();
 
                     if len == 0 {
+                        drop(v);
                         break;
                     }
                     else {
                         let path = v.remove(len - 1);
+                        drop(v);
                         let file = Path::new(path.as_str()).file_name().unwrap();
 
                         let dest_path = Path::new(dest.clone().as_str()).join(file);
@@ -67,6 +69,7 @@ fn main() {
 
                         let mut vv = new_paths_clone.lock().unwrap();
                         vv.push(dest_path_str.to_string());
+                        drop(vv);
 
                         fs::copy(&path, &dest_path_str).unwrap();
                         assert!(metadata(dest_path_str).unwrap().is_file());
@@ -88,7 +91,7 @@ fn main() {
 
     let mut threads = Vec::new();
     for _i in 0..task.num_th {
-        threads.push(thread::spawn({
+        threads.push(thread::spawn(unsafe {
             let paths_clone = Arc::clone(&paths);
             let albums = Arc::clone(&albums);
 
@@ -97,10 +100,12 @@ fn main() {
                 let len = v.len();
 
                 if len == 0 {
+                    drop(v);
                     break;
                 }
                 else {
                     let path = v.remove(len - 1);
+                    drop(v);
                     println!("{}", path);
 
                     if !norm {
@@ -145,7 +150,7 @@ fn main() {
         let albums = Arc::new(Mutex::new(albums_vec));
         let mut threads_album = Vec::new();
         for _i in 0..task.num_th {
-            threads_album.push(thread::spawn({
+            threads_album.push(thread::spawn(unsafe {
                 let albums_clone = Arc::clone(&albums);
 
                 move || loop {
@@ -153,10 +158,12 @@ fn main() {
                     let len = albums.len();
 
                     if len == 0 {
+                        drop(albums);
                         break;
                     }
                     else {
-                        let mut album = albums.remove(len - 1);
+                        let album = albums.remove(len - 1);
+                        drop(albums);
                         add_rg_album_tags(album);
                     }
                 }
