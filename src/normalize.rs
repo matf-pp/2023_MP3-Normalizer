@@ -97,10 +97,10 @@ fn get_tag_from_path(path:&String) -> Option<Tag> {
 
 fn calc_rg_track_tags(path: &String) -> RgTrackTags {
     let mut paths: HashSet<String> = HashSet::new(); paths.insert(path.to_string());
-    let rg_track_gain_desired = replay_gain_calc::calc_replay_gain(&paths);
+    let rg_track_gain_desired = calc_replay_gain(&paths);
 
     let rg_tags: RgTrackTags = RgTrackTags {
-        rg_track_gain: DEFAULT_GAIN - rg_track_gain_desired,
+        rg_track_gain: rg_track_gain_desired - DEFAULT_GAIN,
         rg_track_peak: 1.0
     };
 
@@ -108,10 +108,10 @@ fn calc_rg_track_tags(path: &String) -> RgTrackTags {
 }
 
 fn calc_rg_album_tags(paths:&HashSet<String>) -> RgAlbumTags {
-    let rg_album_gain_desired: f64 = calc_replay_gain(paths);
+    let rg_album_gain_desired: f64 = replay_gain_calc::calc_replay_gain(paths);
 
     let rg_tags = RgAlbumTags {
-        rg_album_gain: rg_album_gain_desired,
+        rg_album_gain: rg_album_gain_desired - DEFAULT_GAIN,
         rg_album_peak: 1.0
     };
 
@@ -122,6 +122,7 @@ fn calc_replay_gain(paths: &HashSet<String>) -> f64 {
     let mut gain_array: Vec<f64> = Vec::new();
 
     for path in paths {
+        println!("\n{}\n", path);
         let file = std::fs::File::open(path).unwrap();
         let decoder = rodio::Decoder::new(BufReader::new(file)).unwrap();
         let sample_rate = decoder.sample_rate();

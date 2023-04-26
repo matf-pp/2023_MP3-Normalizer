@@ -106,7 +106,7 @@ fn main() {
                 else {
                     let path = v.remove(len - 1);
                     drop(v);
-                    println!("{}", path);
+                    println!("Obradjujem {}", path);
 
                     if !norm {
                         remove_rg_tags(path);
