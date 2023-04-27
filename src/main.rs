@@ -16,10 +16,13 @@ use crate::normalize::{add_rg_track_tags, remove_rg_tags, get_album_from_path, a
 fn main() {
     let args: Vec<String> = env::args().collect();
     let task: parse::Task = parse::parse_args(args);
+    let loudness = task.loudness;
 
     let norm = (task.actions & 1 << 4) == 0;
     let cp = task.dest.clone() != ".";
     let album_rg = (task.actions & 1 << 5) != 0;
+    let album_rg_dir = (task.actions & 1 << 6) != 0;
+    assert!(!(album_rg && album_rg_dir));
     let albums = Arc::new(Mutex::new(HashMap::new()));
 
     let new_paths = Arc::new(Mutex::new(Vec::new()));
@@ -91,7 +94,7 @@ fn main() {
 
     let mut threads = Vec::new();
     for _i in 0..task.num_th {
-        threads.push(thread::spawn(unsafe {
+        threads.push(thread::spawn({
             let paths_clone = Arc::clone(&paths);
             let albums = Arc::clone(&albums);
 
@@ -112,18 +115,26 @@ fn main() {
                         remove_rg_tags(path);
                     }
                     else {
-                        add_rg_track_tags(path.clone());
-                        if album_rg {
-                            let album =  match get_album_from_path(&path) {
-                                Some(album) => album,
-                                None => "__None__".to_string()
-                            };
-
+                        if album_rg || album_rg_dir {
                             let mut albums = albums.lock().unwrap();
+
                             let mut temp_set = HashSet::new();
                             temp_set.insert(path.clone());
 
-                            albums.entry(album).and_modify(|set:&mut HashSet<String>| {set.insert(path);}).or_insert(temp_set);
+                            if album_rg {
+                                let album =  match get_album_from_path(&path) {
+                                    Some(album) => album,
+                                    None => "__None__".to_string()
+                                };
+
+                                albums.entry(album).and_modify(|set:&mut HashSet<String>| {set.insert(path);}).or_insert(temp_set);
+                            }
+                            else {
+                                albums.entry("".to_string()).and_modify(|set:&mut HashSet<String>| {set.insert(path);}).or_insert(temp_set);
+                            }
+                        }
+                        else {
+                            add_rg_track_tags(path.clone(), loudness);
                         }
                     }
                 }
@@ -135,7 +146,8 @@ fn main() {
         t.join().unwrap();
     }
 
-    if norm && album_rg {
+    if norm && (album_rg || album_rg_dir) {
+        println!("\nAlbumi");
         let mut albums_vec = Vec::new();
 
         let albums = albums.lock().unwrap();
@@ -150,7 +162,7 @@ fn main() {
         let albums = Arc::new(Mutex::new(albums_vec));
         let mut threads_album = Vec::new();
         for _i in 0..task.num_th {
-            threads_album.push(thread::spawn(unsafe {
+            threads_album.push(thread::spawn({
                 let albums_clone = Arc::clone(&albums);
 
                 move || loop {
@@ -164,7 +176,7 @@ fn main() {
                     else {
                         let album = albums.remove(len - 1);
                         drop(albums);
-                        add_rg_album_tags(album);
+                        add_rg_album_tags(album, loudness);
                     }
                 }
             }));

@@ -12,12 +12,12 @@ pub fn calc_replay_gain(paths: &HashSet<String>) -> f64 {
         let mut decoder = Decoder::new(File::open(path).unwrap());
         loop {
             match decoder.next_frame() {
-                Ok(Frame { data, sample_rate, channels, .. }) => {
+                Ok(Frame { data, sample_rate: _sample_rate, channels, .. }) => {
                     let samples = data;
                     let samples_per_channel = samples.len() / channels as usize;
                     let mut rms_vec = Vec::new();
 
-                    for (i, channel) in samples.chunks_exact(samples_per_channel).enumerate() {
+                    for channel in samples.chunks_exact(samples_per_channel) {
                         let rms = calc_rms(channel);
                         rms_vec.push(rms);
                     }
@@ -31,6 +31,7 @@ pub fn calc_replay_gain(paths: &HashSet<String>) -> f64 {
                 Err(e) => panic!("{:?}", e),
             }
         }
+
     }
     // Sort vector of floats
     gain_array.sort_by(|a, b| a.partial_cmp(b).unwrap());

@@ -11,7 +11,7 @@ use walkdir::WalkDir;
 
 
 pub(crate) struct Task {
-    pub loudness:f32,
+    pub loudness:f64,
     pub paths:Vec<String>,
     pub dest:String,
     pub num_th:i32,
@@ -42,7 +42,7 @@ pub fn finish(&self) {
 }
 
 pub(crate) fn parse_args(args:Vec<String>) -> Task {
-    let mut loudness:f32 = 83.0;
+    let mut loudness:f64 = 83.0;
     let mut paths:HashSet<String> = HashSet::new();
     let mut dest:String = ".".to_string();
     let mut num_th:i32 = 1;
@@ -58,6 +58,7 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
             "-l" => curr = 4,
             "-r" => actions |= 1 << 4,
             "-a" => actions |= 1 << 5,
+            "-ad" => actions |= 1 << 6,
             "-show" => actions |= 1,
             "-sd" => actions |= 1 << 1,
             "-hi" => actions |= 1 << 2,
@@ -93,7 +94,7 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
                         curr = 0;
                     },
                     4 => {
-                        loudness = arg.parse::<f32>().unwrap();
+                        loudness = arg.parse::<f64>().unwrap();
                         curr = 0;
                     },
                     _ => {}

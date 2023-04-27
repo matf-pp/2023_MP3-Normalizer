@@ -1,16 +1,11 @@
 mod replay_gain_calc;
 
 use std::collections::HashSet;
-use std::hash::Hash;
-use std::path;
 
 extern crate id3;
 use id3::{Error, ErrorKind, Tag, TagLike, Version};
 use id3::frame::{ExtendedText};
 
-use std::io::BufReader;
-use itertools::Itertools;
-use rodio::Source;
 
 struct RgTrackTags {
     rg_track_gain:f64,
@@ -22,10 +17,8 @@ struct RgAlbumTags {
     rg_album_peak:f32
 }
 
-const DEFAULT_GAIN: f64 = 83.0;
-
-pub fn add_rg_track_tags(path:String) {
-    let rg_track_tags = calc_rg_track_tags(&path);
+pub fn add_rg_track_tags(path:String, loudness:f64) {
+    let rg_track_tags = calc_rg_track_tags(&path, loudness);
 
     let mut tag = match get_tag_from_path(&path) {
         Some(tag) => tag,
@@ -44,8 +37,8 @@ pub fn add_rg_track_tags(path:String) {
     tag.write_to_path(&path, Version::Id3v24).expect("Failed writing tag");
 }
 
-pub fn add_rg_album_tags(paths:HashSet<String>) {
-    let rg_album_tags = calc_rg_album_tags(&paths);
+pub fn add_rg_album_tags(paths:HashSet<String>, loudness:f64) {
+    let rg_album_tags = calc_rg_album_tags(&paths, loudness);
 
     for path in paths.iter() {
         let mut tag = match get_tag_from_path(&path) {
@@ -76,6 +69,14 @@ pub fn remove_rg_tags(path:String) {
     tag.remove_extended_text(Some("REPLAYGAIN_TRACK_PEAK"), None);
     tag.remove_extended_text(Some("REPLAYGAIN_ALBUM_GAIN"), None);
     tag.remove_extended_text(Some("REPLAYGAIN_ALBUM_PEAK"), None);
+    // legacy rg_tags
+    tag.remove_extended_text(Some("replaygain_reference_loudness"), None);
+    tag.remove_extended_text(Some("replaygain_track_gain"), None);
+    tag.remove_extended_text(Some("replaygain_track_peak"), None);
+    tag.remove_extended_text(Some("replaygain_album_gain"), None);
+    tag.remove_extended_text(Some("replaygain_album_peak"), None);
+    tag.remove_extended_text(Some("MP3GAIN_MINMAX"), None);
+    tag.remove_extended_text(Some("MP3GAIN_ALBUM_MINMAX"), None);
 
     tag.write_to_path(&path, Version::Id3v24).expect("Failed writing tag");
 }
@@ -95,84 +96,25 @@ fn get_tag_from_path(path:&String) -> Option<Tag> {
     };
 }
 
-fn calc_rg_track_tags(path: &String) -> RgTrackTags {
+fn calc_rg_track_tags(path: &String, loudness: f64) -> RgTrackTags {
     let mut paths: HashSet<String> = HashSet::new(); paths.insert(path.to_string());
-    let rg_track_gain_desired = calc_replay_gain(&paths);
+    let rg_track_gain_desired = replay_gain_calc::calc_replay_gain(&paths);
 
     let rg_tags: RgTrackTags = RgTrackTags {
-        rg_track_gain: rg_track_gain_desired - DEFAULT_GAIN,
+        rg_track_gain: rg_track_gain_desired - loudness,
         rg_track_peak: 1.0
     };
 
     return rg_tags;
 }
 
-fn calc_rg_album_tags(paths:&HashSet<String>) -> RgAlbumTags {
+fn calc_rg_album_tags(paths:&HashSet<String>, loudness: f64) -> RgAlbumTags {
     let rg_album_gain_desired: f64 = replay_gain_calc::calc_replay_gain(paths);
 
     let rg_tags = RgAlbumTags {
-        rg_album_gain: rg_album_gain_desired - DEFAULT_GAIN,
+        rg_album_gain: rg_album_gain_desired - loudness,
         rg_album_peak: 1.0
     };
 
     return rg_tags;
-}
-
-fn calc_replay_gain(paths: &HashSet<String>) -> f64 {
-    let mut gain_array: Vec<f64> = Vec::new();
-
-    for path in paths {
-        println!("\n{}\n", path);
-        let file = std::fs::File::open(path).unwrap();
-        let decoder = rodio::Decoder::new(BufReader::new(file)).unwrap();
-        let sample_rate = decoder.sample_rate();
-        let sample_chunk: u32 = sample_rate / 20;
-        // let total_duration = decoder.total_duration();
-        let channels = decoder.channels();
-        let samples = decoder.into_iter().collect_vec();
-        let samples_per_channel = samples.len() / channels as usize;
-        let mut rms_vec = [(); 2].map(|_| Vec::new());
-
-        for (i, channel) in samples.chunks_exact(samples_per_channel).enumerate()
-        {
-            for (j, sample) in channel.chunks(sample_chunk as usize).enumerate()
-            {
-                // equal_loudness_filter
-                
-                // Call RMS calculation
-                let rms = calc_rms(sample);
-                rms_vec[i].push(rms);
-
-                if channels == 1 {
-                    rms_vec[1].push(rms);
-                }
-
-                // take mean of stereo channels
-                if i == 1 || channels == 1 {
-                    let mut x = (rms_vec[0][j] + rms_vec[1][j]) / 2.0;
-
-                    // Convert to dB
-                    let const_log_factor = 1e-10;
-                    x = 20.0 * (x + const_log_factor).log10() as f64;
-                    gain_array.push(x);
-                }
-            }
-        }
-    }
-    // Sort vector of floats
-    gain_array.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    let rg_index = ((gain_array.len() as f64) * 0.95).round() as usize;
-    let replay_gain = gain_array[rg_index];
-
-    replay_gain
-}
-
-fn calc_rms(sample: &[i16]) -> f64{
-    let mut sqr_sum = 0.0;
-    for sample_val in sample {
-        let val = *sample_val as f64;
-        sqr_sum += val * val;
-    }
-    let rms = (sqr_sum / sample.len() as f64).sqrt();
-    rms
 }
