@@ -2,24 +2,33 @@ mod parse;
 mod normalize;
 
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::env;
 use std::fs;
 use std::fs::metadata;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use crate::normalize::{add_rg_track_tags, remove_rg_tags, get_album_from_path, add_rg_album_tags};
-
+use crate::normalize::{add_rg_track_tags, remove_rg_tags, get_album_from_path, add_rg_album_tags, write_rg_tags, RgTags};
+use std::time::Instant;
 
 // vrv najgori moguci kod IKADA
 fn main() {
+    let now = Instant::now();
+
     let args: Vec<String> = env::args().collect();
     let task: parse::Task = parse::parse_args(args);
     let loudness = task.loudness;
+    assert!(loudness > 0.0);
 
-    let norm = (task.actions & 1 << 4) == 0;
-    let cp = task.dest.clone() != ".";
+    let set_tr = (task.actions & 1 << 7) != 0;
+    let set_al = (task.actions & 1 << 8) != 0;
+    let set = set_tr || set_al;
+    let rg_set = task.rg_set;
+    assert!(!(set_tr && set_al));
+    let remove = (task.actions & 1 << 4) != 0;
+    assert!(!(remove && set));
+    let norm = !remove && !set;
+    let cp = task.dest.clone() != "$$$";
     let album_rg = (task.actions & 1 << 5) != 0;
     let album_rg_dir = (task.actions & 1 << 6) != 0;
     assert!(!(album_rg && album_rg_dir));
@@ -109,17 +118,32 @@ fn main() {
                 else {
                     let path = v.remove(len - 1);
                     drop(v);
-                    println!("Obradjujem {}", path);
+                    // println!("Obradjujem {}", path);
 
                     if !norm {
-                        remove_rg_tags(path);
+                        if set {
+                            let rg_tags = RgTags {
+                                rg_gain: rg_set,
+                                rg_peak: 1.0
+                            };
+
+                            if set_tr {
+                                write_rg_tags(&path, rg_tags, false);
+                            }
+                            else {
+                                write_rg_tags(&path, rg_tags, true);
+                            }
+                        }
+                        else {
+                            remove_rg_tags(path);
+                        }
                     }
                     else {
                         if album_rg || album_rg_dir {
                             let mut albums = albums.lock().unwrap();
 
-                            let mut temp_set = HashSet::new();
-                            temp_set.insert(path.clone());
+                            let mut temp_vec = Vec::new();
+                            temp_vec.push(path.clone());
 
                             if album_rg {
                                 let album =  match get_album_from_path(&path) {
@@ -127,10 +151,10 @@ fn main() {
                                     None => "__None__".to_string()
                                 };
 
-                                albums.entry(album).and_modify(|set:&mut HashSet<String>| {set.insert(path);}).or_insert(temp_set);
+                                albums.entry(album).and_modify(|vec:&mut Vec<String>| {vec.push(path);}).or_insert(temp_vec);
                             }
                             else {
-                                albums.entry("".to_string()).and_modify(|set:&mut HashSet<String>| {set.insert(path);}).or_insert(temp_set);
+                                albums.entry("".to_string()).and_modify(|vec:&mut Vec<String>| {vec.push(path);}).or_insert(temp_vec);
                             }
                         }
                         else {
@@ -147,14 +171,13 @@ fn main() {
     }
 
     if norm && (album_rg || album_rg_dir) {
-        println!("\nAlbumi");
         let mut albums_vec = Vec::new();
 
         let albums = albums.lock().unwrap();
-        for (key, value) in albums.iter() {
-            for x in value.iter() {
-                println!("{} {}", key, x);
-            }
+        for (_key, value) in albums.iter() {
+            // for x in value.iter() {
+            //     println!("{} {}", key, x);
+            // }
             albums_vec.push(value.clone());
         }
 
@@ -188,4 +211,7 @@ fn main() {
     }
 
     task.finish();
+
+    let elapsed = now.elapsed();
+    println!("Elapsed: {:.2?}", elapsed);
 }

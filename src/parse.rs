@@ -15,7 +15,8 @@ pub(crate) struct Task {
     pub paths:Vec<String>,
     pub dest:String,
     pub num_th:i32,
-    pub actions:i32
+    pub actions:i32,
+    pub rg_set:f64,
 }
 
 impl Task {
@@ -44,9 +45,10 @@ pub fn finish(&self) {
 pub(crate) fn parse_args(args:Vec<String>) -> Task {
     let mut loudness:f64 = 83.0;
     let mut paths:HashSet<String> = HashSet::new();
-    let mut dest:String = ".".to_string();
+    let mut dest:String = "$$$".to_string();
     let mut num_th:i32 = 1;
     let mut actions:i32 = 0;
+    let mut rg_set:f64 = 0.0;
 
     let mut curr:i32 = 0;
     for arg in args {
@@ -56,6 +58,8 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
             "-o" => curr = 2,
             "-nt" => curr = 3,
             "-l" => curr = 4,
+            "-st" => curr = 5,
+            "-sa" => curr = 6,
             "-r" => actions |= 1 << 4,
             "-a" => actions |= 1 << 5,
             "-ad" => actions |= 1 << 6,
@@ -97,6 +101,16 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
                         loudness = arg.parse::<f64>().unwrap();
                         curr = 0;
                     },
+                    5 => {
+                        rg_set = arg.parse::<f64>().unwrap();
+                        actions |= 1 << 7;
+                        curr = 0;
+                    },
+                    6 => {
+                        rg_set = arg.parse::<f64>().unwrap();
+                        actions |= 1 << 8;
+                        curr = 0;
+                    }
                     _ => {}
                 }
             }
@@ -109,7 +123,8 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
         paths: paths_vec,
         dest,
         num_th,
-        actions
+        actions,
+        rg_set
     };
 
     return task;
