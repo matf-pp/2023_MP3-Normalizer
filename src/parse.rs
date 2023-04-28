@@ -60,6 +60,7 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
             "-l" => curr = 4,
             "-st" => curr = 5,
             "-sa" => curr = 6,
+            "-h" => curr = 0,
             "-r" => actions |= 1 << 4,
             "-a" => actions |= 1 << 5,
             "-ad" => actions |= 1 << 6,
@@ -110,6 +111,27 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
                         rg_set = arg.parse::<f64>().unwrap();
                         actions |= 1 << 8;
                         curr = 0;
+                    }
+                    0 => {
+                        println!("Help for MP3 Normalizer:");
+
+                        println!("-i \t Specify input folder");
+                        println!("-o \t Specify output folder");
+                        println!("-nt \t idk");
+                        println!("-l \t idk");
+                        println!("-st \t idk");
+                        println!("-sa \t idk");
+                        println!("-sa \t idk");
+                        println!("-r \t run");
+                        println!("-a \t Normalize album");
+                        println!("-ad \t Normalize album");
+                        println!("-show \t Show results");
+                        println!("-sd \t idk");
+                        println!("-hi \t idk");
+                        println!("-sl \t idk");
+
+                        println!("");
+                        println!("Rust already uses some arguments for it's own purposes (ie. -i), so make sure to use -- before parsing some arguments");
                     }
                     _ => {}
                 }
