@@ -48,7 +48,7 @@ pub fn calc_replay_gain(paths: &Vec<String>) -> Vec<(f64, f64)> {
         gain_array_track.sort_by(|a, b| a.partial_cmp(b).unwrap());
         let rg_index_track = ((gain_array_track.len() as f64) * 0.95).round() as usize;
         let replay_gain_track = gain_array_track[rg_index_track];
-        peak_track = 20.0 * (peak_track + CONST_LOG_FACTOR).log10() as f64;
+        // peak_track = 20.0 * (peak_track + CONST_LOG_FACTOR).log10() as f64;
         (replay_gain_track, peak_track)
     }).collect();
 
