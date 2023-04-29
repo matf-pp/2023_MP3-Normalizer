@@ -99,7 +99,7 @@ fn calc_rg_track_tags(path: &String, loudness: f64) -> RgTags {
     let (rg_track_gain_desired, rg_track_peak_desired) = replay_gain_calc::calc_replay_gain(&paths)[0];
 
     let rg_tags = RgTags {
-        rg_gain: round(rg_track_gain_desired - loudness, 6),
+        rg_gain: clip(round(rg_track_gain_desired - loudness, 6), -24.0, 60.0),
         rg_peak: round(rg_track_peak_desired / MAX_SAMPLE_VALUE, 6)
     };
 
@@ -111,7 +111,7 @@ fn calc_rg_album_tags(paths:&Vec<String>, loudness: f64) -> RgTags {
 
     for (i, path) in paths.iter().enumerate() {
         let rg_track_tags = RgTags {
-            rg_gain: round(rg_desired[i].0 - loudness, 6),
+            rg_gain: clip(round(rg_desired[i].0 - loudness, 6), -24.0, 60.0),
             rg_peak: round(rg_desired[i].1 / MAX_SAMPLE_VALUE, 6)
         };
         write_rg_tags(path, rg_track_tags, false);
@@ -120,7 +120,7 @@ fn calc_rg_album_tags(paths:&Vec<String>, loudness: f64) -> RgTags {
     let rg_album_desired = rg_desired[paths.len()];
 
     let rg_tags = RgTags {
-        rg_gain: round(rg_album_desired.0 - loudness, 6),
+        rg_gain: clip(round(rg_album_desired.0 - loudness, 6), -24.0, 60.0),
         rg_peak: round(rg_album_desired.1 / MAX_SAMPLE_VALUE, 6)
     };
 
@@ -130,4 +130,14 @@ fn calc_rg_album_tags(paths:&Vec<String>, loudness: f64) -> RgTags {
 fn round(x: f64, decimals: u32) -> f64 {
     let y = 10i32.pow(decimals) as f64;
     (x * y).round() / y
+}
+
+fn clip(x: f64, x_min:f64, x_max:f64) -> f64 {
+    if x < x_min {
+        x_min
+    }
+    else if x > x_max {
+        x_max
+    }
+    x
 }
