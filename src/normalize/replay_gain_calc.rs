@@ -5,19 +5,17 @@ use std::fs::File;
 use std::sync::{Arc, Mutex};
 use rayon::prelude::*;
 
+
 const CONST_LOG_FACTOR: f64 = 1e-10;
 
-
 pub fn calc_replay_gain(paths: &Vec<String>) -> Vec<(f64, f64)> {
-    let gain_array_tracks1 = Arc::new(Mutex::new(Vec::new()));
-    //let peak_array_tracks1: Arc<Mutex<Vec<f64>>> = Arc::new(Mutex::new(Vec::new()));
+    let gain_array_tracks = Arc::new(Mutex::new(Vec::new()));
 
     let mut track_gains:Vec<_> = paths.par_iter().map(|path| {
-        let clone_gain = Arc::clone(&gain_array_tracks1);
-        //let clone_peak: Arc<Mutex<Vec<f64>>> = Arc::clone(&peak_array_tracks1);
+        let clone_gain = Arc::clone(&gain_array_tracks);
 
         let mut gain_array_track: Vec<f64> = Vec::new();
-        let mut peak: f64 = 0.0;
+        let mut peak_track: f64 = 0.0;
 
         let mut decoder = Decoder::new(File::open(path).unwrap());
         loop {
@@ -28,7 +26,7 @@ pub fn calc_replay_gain(paths: &Vec<String>) -> Vec<(f64, f64)> {
                     let mut rms_vec = Vec::new();
 
                     for channel in samples.chunks_exact(samples_per_channel) {
-                        calc_peak(channel, &mut peak);
+                        calc_peak(channel, &mut peak_track);
                         let rms = calc_rms(channel);
                         rms_vec.push(rms);
                     }
@@ -39,12 +37,9 @@ pub fn calc_replay_gain(paths: &Vec<String>) -> Vec<(f64, f64)> {
 
                     gain_array_track.push(rg_db);
 
-                    let mut clone1 = clone_gain.lock().unwrap();
-                    //let mut clone2 = clone_peak.lock().unwrap();
-                    clone1.push(rg_db);
-                    //clone2.push(peak_db);
-                    drop(clone1);
-                    //drop(clone2);
+                    let mut clone = clone_gain.lock().unwrap();
+                    clone.push(rg_db);
+                    drop(clone);
                 },
                 Err(Error::Eof) => break,
                 Err(e) => panic!("{:?}", e),
@@ -53,16 +48,18 @@ pub fn calc_replay_gain(paths: &Vec<String>) -> Vec<(f64, f64)> {
         gain_array_track.sort_by(|a, b| a.partial_cmp(b).unwrap());
         let rg_index_track = ((gain_array_track.len() as f64) * 0.95).round() as usize;
         let replay_gain_track = gain_array_track[rg_index_track];
-        peak = 20.0 * (peak + CONST_LOG_FACTOR).log10() as f64;
-        (replay_gain_track, peak)
+        peak_track = 20.0 * (peak_track + CONST_LOG_FACTOR).log10() as f64;
+        (replay_gain_track, peak_track)
     }).collect();
 
     // Sort vector of floats
-    let mut gain_array_tracks: std::sync::MutexGuard<Vec<f64>> = gain_array_tracks1.lock().unwrap();
-    gain_array_tracks.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    let rg_index_tracks = ((gain_array_tracks.len() as f64) * 0.95).round() as usize;
-    let replay_gain_tracks = gain_array_tracks[rg_index_tracks];
-    track_gains.push((replay_gain_tracks, 1.0));
+    let mut gain_array_tracks_final: std::sync::MutexGuard<Vec<f64>> = gain_array_tracks.lock().unwrap();
+    gain_array_tracks_final.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    let rg_index_tracks = ((gain_array_tracks_final.len() as f64) * 0.95).round() as usize;
+    let replay_gain_tracks = gain_array_tracks_final[rg_index_tracks];
+    let peak_tracks = track_gains.iter().map(|pair| pair.1)
+        .max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
+    track_gains.push((replay_gain_tracks, peak_tracks));
 
     track_gains
 }

@@ -119,7 +119,7 @@ fn calc_rg_album_tags(paths:&Vec<String>, loudness: f64) -> RgTags {
 
     let rg_tags = RgTags {
         rg_gain: rg_album_desired.0 - loudness,
-        rg_peak: rg_album_desired.1
+        rg_peak: rg_album_desired.1 / loudness
     };
 
     return rg_tags;

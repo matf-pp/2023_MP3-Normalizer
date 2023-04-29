@@ -35,7 +35,7 @@ fn main() {
     assert!(!(album_rg && album_rg_dir));
     let help = (task.actions & (1 << 9)) != 0;
     if help {
-        assert!((task.actions & (1 << 9)) == (1 << 9));
+        assert_eq!((task.actions & (1 << 9)), (1 << 9));
         helper_fn();
         exit(0);
     }
@@ -223,7 +223,6 @@ fn main() {
     let elapsed = now.elapsed();
     println!("Elapsed: {:.2?}", elapsed);
 }
-
 
 fn helper_fn() {
     println!("Help for MP3 Normalizer:");
