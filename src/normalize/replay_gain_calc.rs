@@ -11,6 +11,7 @@ pub fn calc_replay_gain(paths: &Vec<String>) -> Vec<f64> {
     let mut track_gains:Vec<_> = paths.par_iter().map(|path| {
         let clone = Arc::clone(&gain_array_tracks1);
         let mut gain_array_track: Vec<f64> = Vec::new();
+        let mut peak_array_track: Vec<f64> = Vec::new();
 
         let mut decoder = Decoder::new(File::open(path).unwrap());
         loop {
@@ -19,21 +20,29 @@ pub fn calc_replay_gain(paths: &Vec<String>) -> Vec<f64> {
                     let samples = data;
                     let samples_per_channel = samples.len() / channels as usize;
                     let mut rms_vec = Vec::new();
-                    // let mut peak: f32 = 0.0;
+                    let mut peak: f64 = 0.0;
 
                     for channel in samples.chunks_exact(samples_per_channel) {
-                        // calc_peak(channel, &mut peak);
+                        calc_peak(channel, &mut peak);
                         let rms = calc_rms(channel);
                         rms_vec.push(rms);
                     }
                     let len = rms_vec.len() as f64;
-                    let mut x = rms_vec.into_iter().sum::<f64>() / len;
                     let const_log_factor = 1e-10;
-                    x = 20.0 * (x + const_log_factor).log10() as f64;
-                    gain_array_track.push(x);
+
+                    let mut rg_db: f64 = rms_vec.into_iter().sum::<f64>() / len;
+                    rg_db = 20.0 * (rg_db + const_log_factor).log10() as f64;
+                    let peak_db = 20.0 * (peak + const_log_factor).log10() as f64;
+
+                    gain_array_track.push(rg_db);
+                    peak_array_track.push(peak_db);
+
                     let mut clone1= clone.lock().unwrap();
-                    clone1.push(x);
+                    let mut clone2= clone.lock().unwrap();
+                    clone1.push(rg_db);
+                    clone2.push(peak_db);
                     drop(clone1);
+                    drop(clone2);
                 },
                 Err(Error::Eof) => break,
                 Err(e) => panic!("{:?}", e),
@@ -65,8 +74,11 @@ fn calc_rms(sample: &[i16]) -> f64 {
     rms
 }
 
-/*
-fn calc_peak(sample: &[i16], peak: &mut 32) {
-    *peak = sample.iter().cloned().map(f32::abs).fold(*peak, f32::max)
+
+fn calc_peak(sample: &[i16], peak: &mut f64) {
+    for sample_val in sample.iter() {
+        if (*sample_val as f64).abs() > *peak {
+            *peak = (*sample_val as f64).abs();
+        }
+    }
 }
- */

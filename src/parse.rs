@@ -60,7 +60,7 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
             "-l" => curr = 4,
             "-st" => curr = 5,
             "-sa" => curr = 6,
-            "-h" => curr = 0,
+            "-h" => curr = 7,
             "-r" => actions |= 1 << 4,
             "-a" => actions |= 1 << 5,
             "-ad" => actions |= 1 << 6,
@@ -112,7 +112,7 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
                         actions |= 1 << 8;
                         curr = 0;
                     }
-                    0 => {
+                    7 => {
                         println!("Help for MP3 Normalizer:");
 
                         println!("-i \t Specify input folder");
