@@ -117,14 +117,14 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
 
                         println!("-i \t Specify input folder");
                         println!("-o \t Specify output folder");
-                        println!("-nt \t idk");
+                        println!("-nt \t Number of threads");
                         println!("-l \t idk");
                         println!("-st \t idk");
                         println!("-sa \t idk");
                         println!("-sa \t idk");
                         println!("-r \t run");
                         println!("-a \t Normalize album");
-                        println!("-ad \t Normalize album");
+                        println!("-ad \t idk");
                         println!("-show \t Show results");
                         println!("-sd \t idk");
                         println!("-hi \t idk");
@@ -132,6 +132,8 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
 
                         println!("");
                         println!("Rust already uses some arguments for it's own purposes (ie. -i), so make sure to use -- before parsing some arguments");
+                    
+                        curr = 0;
                     }
                     _ => {}
                 }
