@@ -234,14 +234,11 @@ fn helper_fn() {
     println!("-l \t Set loudness");
     println!("-st \t Set track replay gain");
     println!("-sa \t Set album replay gain");
-    println!("-r \t run");
-    println!("-a \t Normalize album");
-    println!("-ad \t idk");
-    println!("-show \t Show results");
-    println!("-sd \t idk");
-    println!("-hi \t idk");
-    println!("-sl \t idk");
-
-    println!("");
-    println!("Rust already uses some arguments for it's own purposes (ie. -i), so make sure to use -- before parsing some arguments");
+    println!("-r \t Remove tags");
+    println!("-a \t Album replay gain");
+    println!("-ad \t Directory replay gain");
+    println!("-show \t Open output directory");
+    println!("-sd \t Shut down PC after finishing");
+    println!("-hi \t Hibernate (TODO)");
+    println!("-sl \t Sleep after finishing");
 }
