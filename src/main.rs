@@ -10,16 +10,17 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use crate::normalize::{add_rg_track_tags, remove_rg_tags, get_album_from_path, add_rg_album_tags, write_rg_tags, RgTags};
 use std::time::Instant;
+use std::process::exit;
 
-// vrv najgori moguci kod IKADA
+
 fn main() {
     let now = Instant::now();
 
     let args: Vec<String> = env::args().collect();
     let task: parse::Task = parse::parse_args(args);
+
     let loudness = task.loudness;
     assert!(loudness > 0.0);
-
     let set_tr = (task.actions & 1 << 7) != 0;
     let set_al = (task.actions & 1 << 8) != 0;
     let set = set_tr || set_al;
@@ -32,6 +33,13 @@ fn main() {
     let album_rg = (task.actions & 1 << 5) != 0;
     let album_rg_dir = (task.actions & 1 << 6) != 0;
     assert!(!(album_rg && album_rg_dir));
+    let help = (task.actions & (1 << 9)) != 0;
+    if help {
+        assert!((task.actions & (1 << 9)) == (1 << 9));
+        helper_fn();
+        exit(0);
+    }
+
     let albums = Arc::new(Mutex::new(HashMap::new()));
 
     let new_paths = Arc::new(Mutex::new(Vec::new()));
@@ -214,4 +222,26 @@ fn main() {
 
     let elapsed = now.elapsed();
     println!("Elapsed: {:.2?}", elapsed);
+}
+
+
+fn helper_fn() {
+    println!("Help for MP3 Normalizer:");
+
+    println!("-i \t Specify input folder");
+    println!("-o \t Specify output folder");
+    println!("-nt \t Number of threads");
+    println!("-l \t Set loudness");
+    println!("-st \t Set track replay gain");
+    println!("-sa \t Set album replay gain");
+    println!("-r \t run");
+    println!("-a \t Normalize album");
+    println!("-ad \t idk");
+    println!("-show \t Show results");
+    println!("-sd \t idk");
+    println!("-hi \t idk");
+    println!("-sl \t idk");
+
+    println!("");
+    println!("Rust already uses some arguments for it's own purposes (ie. -i), so make sure to use -- before parsing some arguments");
 }

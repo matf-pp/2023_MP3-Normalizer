@@ -43,7 +43,7 @@ pub fn finish(&self) {
 }
 
 pub(crate) fn parse_args(args:Vec<String>) -> Task {
-    let mut loudness:f64 = 83.0;
+    let mut loudness:f64 = 89.0;
     let mut paths:HashSet<String> = HashSet::new();
     let mut dest:String = "$$$".to_string();
     let mut num_th:i32 = 1;
@@ -60,7 +60,7 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
             "-l" => curr = 4,
             "-st" => curr = 5,
             "-sa" => curr = 6,
-            "-h" => curr = 7,
+            "-h" => actions |= 1 << 9,
             "-r" => actions |= 1 << 4,
             "-a" => actions |= 1 << 5,
             "-ad" => actions |= 1 << 6,
@@ -111,30 +111,11 @@ pub(crate) fn parse_args(args:Vec<String>) -> Task {
                         rg_set = arg.parse::<f64>().unwrap();
                         actions |= 1 << 8;
                         curr = 0;
-                    }
+                    },
                     7 => {
-                        println!("Help for MP3 Normalizer:");
-
-                        println!("-i \t Specify input folder");
-                        println!("-o \t Specify output folder");
-                        println!("-nt \t Number of threads");
-                        println!("-l \t idk");
-                        println!("-st \t idk");
-                        println!("-sa \t idk");
-                        println!("-sa \t idk");
-                        println!("-r \t run");
-                        println!("-a \t Normalize album");
-                        println!("-ad \t idk");
-                        println!("-show \t Show results");
-                        println!("-sd \t idk");
-                        println!("-hi \t idk");
-                        println!("-sl \t idk");
-
-                        println!("");
-                        println!("Rust already uses some arguments for it's own purposes (ie. -i), so make sure to use -- before parsing some arguments");
-                    
-                        curr = 0;
-                    }
+                        rg_set = arg.parse::<f64>().unwrap();
+                        actions |= 1 << 10;
+                    },
                     _ => {}
                 }
             }

@@ -94,32 +94,32 @@ fn get_tag_from_path(path:&String) -> Option<Tag> {
 
 fn calc_rg_track_tags(path: &String, loudness: f64) -> RgTags {
     let mut paths: Vec<String> = Vec::new(); paths.push(path.to_string());
-    let rg_track_gain_desired = replay_gain_calc::calc_replay_gain(&paths)[0];
+    let (rg_track_gain_desired, rg_track_peak_desired) = replay_gain_calc::calc_replay_gain(&paths)[0];
 
     let rg_tags = RgTags {
         rg_gain: rg_track_gain_desired - loudness,
-        rg_peak: 1.0
+        rg_peak: rg_track_peak_desired / loudness
     };
 
     return rg_tags;
 }
 
 fn calc_rg_album_tags(paths:&Vec<String>, loudness: f64) -> RgTags {
-    let rg_gains = replay_gain_calc::calc_replay_gain(&paths);
+    let rg_desired = replay_gain_calc::calc_replay_gain(&paths);
 
     for (i, path) in paths.iter().enumerate() {
         let rg_track_tags = RgTags {
-            rg_gain: rg_gains[i] - loudness,
-            rg_peak: 1.0
+            rg_gain: rg_desired[i].0 - loudness,
+            rg_peak: rg_desired[i].1 / loudness
         };
         write_rg_tags(path, rg_track_tags, false);
     }
 
-    let rg_album_gain_desired = rg_gains[paths.len()];
+    let rg_album_desired = rg_desired[paths.len()];
 
     let rg_tags = RgTags {
-        rg_gain: rg_album_gain_desired - loudness,
-        rg_peak: 1.0
+        rg_gain: rg_album_desired.0 - loudness,
+        rg_peak: rg_album_desired.1
     };
 
     return rg_tags;
