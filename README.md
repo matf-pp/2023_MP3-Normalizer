@@ -1,5 +1,7 @@
 # 2023_MP3-Normalizer
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/de3e2c5d24254ceb852bf62be98c7557)](https://app.codacy.com/gh/matf-pp/2023_MP3-Normalizer?utm_source=github.com&utm_medium=referral&utm_content=matf-pp/2023_MP3-Normalizer&utm_campaign=Badge_Grade)
+
 ## O aplikaciji
 
 Desktop CLI aplikacija koja normalizuje mp3 fajlove
