@@ -7,8 +7,8 @@
 The idea was to create a console app that will normalize track or album of tracks. Written in Rust programming language, our application uses multithreaded support, to give users fast normalization.
 <br>
 Project was based on replay gain, modifying peak and gain difference tags in MP3 file.
-+ `Gain difference` was calculated by measuring effective power of the waveform (RMS) substracted by some loudness constant (our default is 89.0 dB)
-+ `Peak` was calculated by measuring the amplitude of the track/album, divided by the maximum aplitude possible a track can have
++   `Gain difference` was calculated by measuring effective power of the waveform (RMS) substracted by some loudness constant (our default is 89.0 dB)
++   `Peak` was calculated by measuring the amplitude of the track/album, divided by the maximum aplitude possible a track can have
 
 ## Run
 
