@@ -134,10 +134,10 @@ fn round(x: f64, decimals: u32) -> f64 {
 
 fn clip(x: f64, x_min:f64, x_max:f64) -> f64 {
     if x < x_min {
-        x_min
+        return x_min;
     }
     else if x > x_max {
-        x_max
+        return x_max;
     }
-    x
+    return x;
 }
